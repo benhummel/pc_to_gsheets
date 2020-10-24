@@ -1,7 +1,8 @@
 ###########################
-
-
-
+# 
+# Personal Capital to Google Sheets
+# Ben Hummel, 2020
+# 
 ###########################
 
 from __future__ import print_function
@@ -26,7 +27,8 @@ SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 SUMMARY_SHEET_NAME = 'wall_chart_test'
 TRANSACTIONS_SHEET_NAME = 'transactions_test'
 
-
+TRANSACTIONS_START_DATE = '2019-04-01' # the date to start pulling transactions from. 
+TRANSACTIONS_END_DATE = (datetime.now() - (timedelta(days=1))).strftime('%Y-%m-%d')
 
 class PewCapital(PersonalCapital):
 	"""
@@ -80,18 +82,13 @@ def import_pc_data():
 
 	accounts_response = pc.fetch('/newaccount/getAccounts')
 	
-	now = datetime.now()
-	date_format = '%Y-%m-%d'
-	days = 90
-	start_date = '2019-04-01' # (now - (timedelta(days=days+1))).strftime(date_format)
-	end_date = (now - (timedelta(days=1))).strftime(date_format)
 	transactions_response = pc.fetch('/transaction/getUserTransactions', {
 		'sort_cols': 'transactionTime',
 		'sort_rev': 'true',
 		'page': '0',
 		'rows_per_page': '100',
-		'startDate': start_date,
-		'endDate': end_date,
+		'startDate': TRANSACTIONS_START_DATE,
+		'endDate': TRANSACTIONS_END_DATE,
 		'component': 'DATAGRID'
 	})
 	pc.save_session()
@@ -101,7 +98,7 @@ def import_pc_data():
 
 	transactions = transactions_response.json()['spData']
 	total_transactions = len(transactions['transactions'])
-	print(f'Number of transactions between {start_date} and {end_date}: {total_transactions}')
+	print(f'Number of transactions between {TRANSACTIONS_START_DATE} and {TRANSACTIONS_END_DATE}: {total_transactions}')
 
 	summary = {}
 
