@@ -8,8 +8,8 @@ Right now it's hard coded with names of sheets that I'm using. Be sure to change
 
 ## Set up environment variables
 ```
-export PEW_EMAIL="<your_personal_capital_email>"
-export PEW_PASSWORD="<your_personal_capital_password>"
+$ export PEW_EMAIL="<your_personal_capital_email>"
+$ export PEW_PASSWORD="<your_personal_capital_password>"
 ```
 
 ## Authorize GSheets access
@@ -19,9 +19,9 @@ https://developers.google.com/sheets/api/quickstart/python?authuser=1
 ## Install packages
 Preferably in a virtualenv:
 ```
-pip install personalcapital
-pip install requests
-pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+$ pip install personalcapital
+$ pip install requests
+$ pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 ```
 
 ## Run `main.py`
