@@ -27,7 +27,7 @@ SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 SUMMARY_SHEET_NAME = 'wall_chart'
 TRANSACTIONS_SHEET_NAME = 'transactions'
 
-TRANSACTIONS_START_DATE = '2019-04-01' # the date to start pulling transactions from. 
+TRANSACTIONS_START_DATE = '2019-04-01' # YYYY-MM-DD, the date to start pulling transactions from. 
 TRANSACTIONS_END_DATE = (datetime.now() - (timedelta(days=1))).strftime('%Y-%m-%d')
 
 class PewCapital(PersonalCapital):

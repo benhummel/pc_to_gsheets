@@ -28,6 +28,17 @@ $ pip install requests
 $ pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 ```
 
+## Edit variables in `main.py`
+You'll need to edit the following variables:
+1. SPREADSHEET_ID:  this is the ID of the Google Sheet you'll be reading and writing to. The format as of this writing is:
+
+`https://docs.google.com/spreadsheets/d/<spreadsheet_id>/...`
+
+2. SUMMARY_SHEET_NAME:  within your spreadsheet, the tab that contains your summary data (one row per month, including columns for Net Worth, Investment Portfolio, etc)
+3. TRANSACTIONS_SHEET_NAME:  within your spreadsheet, the tab that contains your transactions data (one row per transaction)
+4. TRANSACTIONS_START_DATE:  we'll pull transactions starting on this date through yesterday. YYYY-MM-DD format. Recommended start date is whenever you started categorizing your transactions in Personal Capital.
+
+
 ## Run `main.py`
 
 Expected outcome: 
