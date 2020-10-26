@@ -24,8 +24,8 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 # The ID and range of a sample spreadsheet.
 SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 
-SUMMARY_SHEET_NAME = 'wall_chart_test'
-TRANSACTIONS_SHEET_NAME = 'transactions_test'
+SUMMARY_SHEET_NAME = 'wall_chart'
+TRANSACTIONS_SHEET_NAME = 'transactions'
 
 TRANSACTIONS_START_DATE = '2019-04-01' # the date to start pulling transactions from. 
 TRANSACTIONS_END_DATE = (datetime.now() - (timedelta(days=1))).strftime('%Y-%m-%d')
@@ -114,13 +114,12 @@ def import_pc_data():
 			'description': this_transaction['description'],
 			'category': this_transaction['categoryId'],
 			'tags': '',
-			'amount': this_transaction['amount'],
+			'amount': this_transaction['amount'], # always a positive int
 			'isIncome': this_transaction['isIncome'],
-			'isSpending': this_transaction['isSpending'] 
+			'isSpending': this_transaction['isSpending'],
+			'isCashIn': this_transaction['isCashIn'], # to determine whether `amount` should be positive or negative
 		}
 		transactions_output.append(this_transaction_filtered)
-
-	# print(transactions_output)
 
 	out = [summary, transactions_output]
 	return out
@@ -164,9 +163,7 @@ def main():
 
 	# reshape transaction data
 	# returns a list of lists, where each sub-list is just the transaction values
-	print("time to reshape")
 	eventual_output = reshape_transactions(transaction_data)
-	print("done reshaping")
 
 	# read sheet to make sure we have data
 	sheet = service.spreadsheets()
@@ -174,7 +171,6 @@ def main():
 	result = sheet.values().get(spreadsheetId=SPREADSHEET_ID,
 								range=range).execute()
 	values = result.get('values', [])
-	print(values)
 
 	# if we don't yet have a row for this month, we need to insert one
 	# get max row to see what month it is
@@ -191,7 +187,7 @@ def main():
 	# get current month
 	current_date = datetime.now()
 	current_month = current_date.strftime("%B") # e.g. "August"
-	current_year = current_date.strftime("%Y") # e.g. "2020"
+	current_year = str(current_date.strftime("%Y")) # e.g. "2020"
 
 	is_current_month_already_present = current_month == max_month
 
@@ -204,7 +200,6 @@ def main():
 		# insert a new row at the bottom for the current month
 		print("we need to insert a new row for this month")
 
-		# select the next row
 		summary_sheet_range = SUMMARY_SHEET_NAME + '!A' + str(max_row+1) + ':C' + str(max_row+1)
 
 
@@ -212,14 +207,12 @@ def main():
 	if not values:
 		print('No data found.')
 	else:
-		print(f"current values: {values}")
-		print(f"values to insert: {summary_data}")
-
 		# upload summary data
+		print("uploading summary data...")
 		summary_body = {
 			"values": [
 				[
-					current_month + ' ' + str(current_year),
+					current_month + ' ' + current_year,
 					networth,
 					investments
 				]
@@ -233,13 +226,11 @@ def main():
 
 
 		# upload transactions data
-		transactions_range = '!A2:H'
+		transactions_range = '!A2:I'
 		transactions_sheet_range = TRANSACTIONS_SHEET_NAME + transactions_range
-		print(transactions_sheet_range)
 
 		print("uploading transactions...")
 		transactions_body = {
-			# "range": transactions_sheet_range,
 			"values": eventual_output,
 			"majorDimension": "ROWS"
 		}
