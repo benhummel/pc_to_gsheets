@@ -18,17 +18,22 @@ import json
 import getpass
 
 
+# Edit these before running #############
+
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
-# The ID and range of a sample spreadsheet.
+# For info on these variables: 
+# https://developers.google.com/sheets/api/guides/concepts
 SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
-
 SUMMARY_SHEET_NAME = 'wall_chart'
 TRANSACTIONS_SHEET_NAME = 'transactions'
 
-TRANSACTIONS_START_DATE = '2019-04-01' # YYYY-MM-DD, the date to start pulling transactions from. 
+TRANSACTIONS_START_DATE = '2019-04-01' # YYYY-MM-DD
 TRANSACTIONS_END_DATE = (datetime.now() - (timedelta(days=1))).strftime('%Y-%m-%d')
+
+#########################################
+
 
 class PewCapital(PersonalCapital):
 	"""
@@ -125,6 +130,7 @@ def import_pc_data():
 	return out
 
 def reshape_transactions(transactions):
+	# returns a list of lists, where each sub-list is just the transaction values
 	eventual_output = []
 	for i in transactions:
 		this_transaction_list = []
@@ -135,34 +141,31 @@ def reshape_transactions(transactions):
 
 def main():
 	# Check Google credentials
-	creds = None
+	google_creds = None
 	if os.path.exists('token.pickle'):
 		with open('token.pickle', 'rb') as token:
-			creds = pickle.load(token)
-	if not creds or not creds.valid:
-		if creds and creds.expired and creds.refresh_token:
-			creds.refresh(Request())
+			google_creds = pickle.load(token)
+	if not google_creds or not google_creds.valid:
+		if google_creds and google_creds.expired and google_creds.refresh_token:
+			google_creds.refresh(Request())
 		else:
 			flow = InstalledAppFlow.from_client_secrets_file(
 				'credentials.json', SCOPES)
-			creds = flow.run_local_server(port=0)
+			google_creds = flow.run_local_server(port=0)
 		with open('token.pickle', 'wb') as token:
-			pickle.dump(creds, token)
-	service = build('sheets', 'v4', credentials=creds)
+			pickle.dump(google_creds, token)
+	service = build('sheets', 'v4', credentials=google_creds)
 
 
-	# Download PC data
+	# download PC data
 	pc_data = import_pc_data()
 	summary_data = pc_data[0]
 	transaction_data = pc_data[1]
-
-	# for testing # pc_data = {'networth': 486483.22, 'investmentAccountsTotal': 394698.19}
 	
 	networth = summary_data['networth']
 	investments = summary_data['investmentAccountsTotal']
 
 	# reshape transaction data
-	# returns a list of lists, where each sub-list is just the transaction values
 	eventual_output = reshape_transactions(transaction_data)
 
 	# read sheet to make sure we have data
@@ -172,26 +175,22 @@ def main():
 								range=range).execute()
 	values = result.get('values', [])
 
-	# if we don't yet have a row for this month, we need to insert one
-	# get max row to see what month it is
-	rows = result.get('values', [])
-	max_row = len(rows)
-	print(f'{max_row} rows retrieved.')
+	max_row = len(values)
+	print(f'{max_row} rows retrieved from Summary sheet.')
 
-	# check max month to see if it's the current one
-	max_date = values[max_row-1][0]
-	max_month = max_date.split(' ')
-	max_month = max_month[0]  # should be "September"
-	print(f"here's the max date we have:  {max_date}")
-
-	# get current month
 	current_date = datetime.now()
 	current_month = current_date.strftime("%B") # e.g. "August"
 	current_year = str(current_date.strftime("%Y")) # e.g. "2020"
 
-	is_current_month_already_present = current_month == max_month
+	def checkForThisMonthRow(values):
+		max_date_in_spreadsheet = values[max_row-1][0]
+		max_month_in_spreadsheet = max_date_in_spreadsheet.split(' ')[0]
+		print(f"here's the max date we have:  {max_date_in_spreadsheet}")
+		
+		is_current_month_already_present = current_month == max_month_in_spreadsheet
+		return is_current_month_already_present
 
-	if is_current_month_already_present:
+	if checkForThisMonthRow(values):
 		# select the last row
 		print("we already have a row for this month, so we'll just overwrite the values")
 		summary_sheet_range =  SUMMARY_SHEET_NAME + '!A' + str(max_row) + ':C' + str(max_row)
@@ -203,12 +202,11 @@ def main():
 		summary_sheet_range = SUMMARY_SHEET_NAME + '!A' + str(max_row+1) + ':C' + str(max_row+1)
 
 
-	# if we didn't get anything from PC API, then we don't upload anything
 	if not values:
-		print('No data found.')
+		print('No data retreived from Personal Capital.')
 	else:
 		# upload summary data
-		print("uploading summary data...")
+		print("Uploading summary data...")
 		summary_body = {
 			"values": [
 				[
@@ -238,6 +236,13 @@ def main():
 			spreadsheetId=SPREADSHEET_ID, range=transactions_sheet_range,
 			valueInputOption='USER_ENTERED', body=transactions_body).execute()
 		print(result)
+
+		output = ""
+		if result:
+			output = "Success!"
+		else:
+			output = "Not sure if that worked."
+		return output 
 
 if __name__ == '__main__':
 	main()
